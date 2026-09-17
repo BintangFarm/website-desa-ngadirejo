@@ -1,11 +1,13 @@
-import { MapPin, Phone, Mail, Clock, Send, Store, CheckCircle2, MessageSquare, PlusCircle } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send, Store, CheckCircle2, MessageSquare, PlusCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../lib/utils";
+import { addUMKM } from "../lib/firebase/umkm";
 
 type Tab = "pesan" | "daftar";
 
 export function Kontak() {
   const [activeTab, setActiveTab] = useState<Tab>("pesan");
+  const [isLoading, setIsLoading] = useState(false);
 
   // --- Kirim Pesan state ---
   const [pesanForm, setPesanForm] = useState({ nama: "", kontak: "", pesan: "" });
@@ -20,6 +22,7 @@ export function Kontak() {
     deskripsi: "",
     produk: "",
     jamOperasional: "",
+    koordinat: "",
   });
 
   const handleKirimPesan = () => {
@@ -31,13 +34,51 @@ export function Kontak() {
     window.open(`https://wa.me/6285735784978?text=${text}`, "_blank");
   };
 
-  const handleDaftarUMKM = () => {
-    const { namaPemilik, namaUsaha, kategori, alamat, kontak, deskripsi } = umkmForm;
+  const handleDaftarUMKM = async () => {
+    const { namaPemilik, namaUsaha, kategori, alamat, kontak, deskripsi, produk, jamOperasional, koordinat } = umkmForm;
     if (!namaPemilik || !namaUsaha || !kontak) return;
-    const text = encodeURIComponent(
-      `Halo Admin Desa Ngadirejo,\n\nSaya ingin mendaftarkan UMKM saya:\n\n*Nama Pemilik:* ${namaPemilik}\n*Nama Usaha:* ${namaUsaha}\n*Kategori:* ${kategori}\n*Alamat Usaha:* ${alamat}\n*Kontak:* ${kontak}\n*Deskripsi Produk/Jasa:*\n${deskripsi}\n\n(dikirim via website desa)`
-    );
-    window.open(`https://wa.me/6285735784978?text=${text}`, "_blank");
+    
+    setIsLoading(true);
+    let parsedKoordinat: [number, number] | undefined = undefined;
+    if (koordinat) {
+      const parts = koordinat.split(',').map(s => Number(s.trim()));
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        parsedKoordinat = [parts[0], parts[1]];
+      }
+    }
+
+    const result = await addUMKM({
+      namaPemilik,
+      nama: namaUsaha,
+      kategori,
+      alamat,
+      kontak,
+      desc: deskripsi,
+      produk,
+      jam: jamOperasional,
+      koordinat: parsedKoordinat,
+      status: "Tutup",
+      image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=800&auto=format&fit=crop"
+    });
+
+    setIsLoading(false);
+
+    if (result.success) {
+      alert("Pendaftaran berhasil! Data UMKM Anda telah tersimpan.");
+      setUmkmForm({
+        namaPemilik: "",
+        namaUsaha: "",
+        kategori: "",
+        alamat: "",
+        kontak: "",
+        deskripsi: "",
+        produk: "",
+        jamOperasional: "",
+        koordinat: "",
+      });
+    } else {
+      alert("Gagal mendaftar: " + result.error);
+    }
   };
 
   return (
@@ -355,11 +396,11 @@ export function Kontak() {
                     Koordinat Lokasi Maps (Opsional)
                   </label>
                   <input
-                    id="umkm-alamat"
+                    id="umkm-koordinat"
                     type="text"
-                    placeholder="Contoh: 123456, -123456"
-                    value={umkmForm.alamat}
-                    onChange={(e) => setUmkmForm({ ...umkmForm, alamat: e.target.value })}
+                    placeholder="Contoh: -7.9923, 112.7838"
+                    value={umkmForm.koordinat}
+                    onChange={(e) => setUmkmForm({ ...umkmForm, koordinat: e.target.value })}
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition "
                   />
                 </div>
@@ -368,14 +409,14 @@ export function Kontak() {
                 <button
                   id="btn-daftar-umkm"
                   onClick={handleDaftarUMKM}
-                  disabled={!umkmForm.namaPemilik || !umkmForm.namaUsaha || !umkmForm.kontak}
+                  disabled={!umkmForm.namaPemilik || !umkmForm.namaUsaha || !umkmForm.kontak || isLoading}
                   className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
                 >
-                  <Store className="w-4 h-4" />
-                  Daftar via WhatsApp
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Store className="w-4 h-4" />}
+                  {isLoading ? "Mendaftar..." : "Daftar Sekarang"}
                 </button>
                 <p className="text-slate-400 text-xs text-center">
-                  Data pendaftaran akan dikirim ke WhatsApp admin desa. Pendaftaran sepenuhnya gratis.
+                  Data pendaftaran akan tersimpan langsung ke database website desa.
                 </p>
               </div>
             )}

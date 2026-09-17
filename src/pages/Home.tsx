@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { getUMKMList, UMKMData } from "../lib/firebase/umkm";
 import { Search, MapPin, Store, Leaf, ShoppingBag, Clock, Navigation, Map } from "lucide-react";
 import { cn } from "../lib/utils";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -110,8 +111,19 @@ export const DUMMY_UMKM = [
 export function Home() {
   const [activeKategori, setActiveKategori] = useState("Semua");
   const [search, setSearch] = useState("");
+  const [umkmList, setUmkmList] = useState<UMKMData[]>(DUMMY_UMKM as UMKMData[]);
 
-  const filteredUMKM = DUMMY_UMKM.filter(u => {
+  useEffect(() => {
+    async function fetchData() {
+      const data = await getUMKMList();
+      if (data.length > 0) {
+        setUmkmList(data);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const filteredUMKM = umkmList.filter(u => {
     const matchSearch = u.nama.toLowerCase().includes(search.toLowerCase());
     // Simplified category matching for demo since categories in dummy data might not exactly match the pills
     const matchCat = activeKategori === "Semua" || true; 
@@ -166,7 +178,7 @@ export function Home() {
               <Store className="w-7 h-7" />
             </div>
             <div>
-              <div className="font-display text-3xl font-bold text-slate-900 mb-1">79</div>
+              <div className="font-display text-3xl font-bold text-slate-900 mb-1">{umkmList.length}</div>
               <div className="text-xs font-bold text-slate-500 tracking-wider uppercase">UMKM Terdaftar</div>
             </div>
           </div>
@@ -207,7 +219,7 @@ export function Home() {
               </p>
             </div>
             <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full font-bold text-sm border border-emerald-100">
-              79 Usaha Ditemukan
+              {filteredUMKM.length} Usaha Ditemukan
             </div>
           </div>
 
@@ -356,7 +368,7 @@ export function Home() {
               <div className="border-t border-slate-100 pt-4 mt-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-700">Total UMKM</span>
-                  <span className="font-bold text-emerald-600 text-base">79</span>
+                  <span className="font-bold text-emerald-600 text-base">{umkmList.length}</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">Tersebar di Desa Ngadirejo</p>
               </div>
@@ -390,7 +402,7 @@ export function Home() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
-                  {DUMMY_UMKM.map(umkm => (
+                  {umkmList.map(umkm => (
                     umkm.koordinat && (
                       <Marker key={umkm.id} position={umkm.koordinat}>
                         <Popup>
@@ -422,7 +434,7 @@ export function Home() {
               {
                 icon: <Store className="w-5 h-5" />,
                 title: "Sebaran Usaha",
-                desc: "79 UMKM tersebar di seluruh dusun Desa Ngadirejo",
+                desc: `${umkmList.length} UMKM tersebar di seluruh dusun Desa Ngadirejo`,
                 color: "text-blue-600 bg-blue-50",
               },
               {

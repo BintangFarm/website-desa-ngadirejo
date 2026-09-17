@@ -3,21 +3,47 @@ import {
   ArrowLeft, MapPin, User, Clock, Share2, 
   Info, Image as ImageIcon, MessageCircle
 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { DUMMY_UMKM } from "./Home";
+import { getUMKMById, UMKMData } from "../lib/firebase/umkm";
 import { cn } from "../lib/utils";
 
 export function UMKMDetail() {
   const { id } = useParams();
-  const umkm = DUMMY_UMKM.find(u => u.id === Number(id));
+  const [umkm, setUmkm] = useState<UMKMData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!id) return;
+      setIsLoading(true);
+      const data = await getUMKMById(id);
+      if (data) {
+        setUmkm(data);
+      } else {
+        const dummy = DUMMY_UMKM.find(u => u.id === Number(id));
+        if (dummy) setUmkm(dummy as UMKMData);
+      }
+      setIsLoading(false);
+    }
+    fetchData();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (!umkm) return <Navigate to="/#daftar-umkm" />;
 
-  // Mock data untuk melengkapi DUMMY_UMKM
-  const pemilik = umkm.id === 1 ? "Bapak Luvian Wijaya" : "Warga Desa Ngadirejo";
-  const alamat = umkm.id === 1 
+  const pemilik = umkm.namaPemilik || (umkm.id === 1 ? "Bapak Luvian Wijaya" : "Warga Desa Ngadirejo");
+  const alamat = umkm.alamat || (umkm.id === 1 
     ? "Rt 04/ Rw 01, Dusun Krajan, Desa Ngadirejo, Kecamatan Jabung, Kabupaten Malang" 
-    : "Desa Ngadirejo, Kecamatan Jabung, Kabupaten Malang";
-  const whatsapp = "6281234567890"; // Dummy WA
+    : "Desa Ngadirejo, Kecamatan Jabung, Kabupaten Malang");
+  const whatsapp = umkm.kontak || "6281234567890"; // Use real contact if available
   
   const handleShare = () => {
     if (navigator.share) {
