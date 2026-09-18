@@ -9,6 +9,7 @@ import { Berita } from "./pages/Berita";
 import { Galeri } from "./pages/Galeri";
 import { Layanan } from "./pages/Layanan";
 import { Kontak } from "./pages/Kontak";
+import { AdminPanel } from "./pages/AdminPanel";
 
 const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ const router = createBrowserRouter([
       { path: "galeri", Component: Galeri },
       { path: "layanan", Component: Layanan },
       { path: "kontak", Component: Kontak },
+      { path: "panel-admin-ngadirejo", Component: AdminPanel },
       { path: "*", Component: () => <div className="p-20 text-center text-2xl font-display font-semibold">Halaman tidak ditemukan.</div> }
     ],
   },

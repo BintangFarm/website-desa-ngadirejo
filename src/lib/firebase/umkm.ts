@@ -1,5 +1,14 @@
 import { db } from "./config";
-import { collection, addDoc, getDocs, doc, getDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, getDoc, serverTimestamp, updateDoc, deleteDoc } from "firebase/firestore";
+
+const TIMEOUT_MS = 10000;
+const withTimeout = <T>(promise: Promise<T>): Promise<T> => {
+  let timeoutId: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("Request timeout. Silakan periksa koneksi atau rules Firestore Anda.")), TIMEOUT_MS);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+};
 
 export interface UMKMData {
   id?: string | number; // String for Firebase ID, number for legacy dummy data
@@ -33,7 +42,7 @@ export async function addUMKM(data: Omit<UMKMData, "id" | "createdAt">) {
       }
     });
 
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), payload);
+    const docRef = await withTimeout(addDoc(collection(db, COLLECTION_NAME), payload));
     return { success: true, id: docRef.id };
   } catch (error: any) {
     console.error("Error adding UMKM: ", error);
@@ -67,5 +76,36 @@ export async function getUMKMById(id: string): Promise<UMKMData | null> {
   } catch (error) {
     console.error("Error fetching UMKM by id: ", error);
     return null;
+  }
+}
+
+export async function updateUMKM(id: string, data: Partial<Omit<UMKMData, "id" | "createdAt">>) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    
+    // Remove undefined fields
+    const payload: any = { ...data };
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === undefined) {
+        delete payload[key];
+      }
+    });
+
+    await withTimeout(updateDoc(docRef, payload));
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error updating UMKM: ", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteUMKM(id: string) {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await withTimeout(deleteDoc(docRef));
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error deleting UMKM: ", error);
+    return { success: false, error: error.message };
   }
 }
