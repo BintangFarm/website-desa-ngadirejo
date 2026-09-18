@@ -350,7 +350,7 @@ export function RootLayout() {
                 <li className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-emerald-400 shrink-0" />
                   <span className="text-white/80">
-                    +62 857-3578-4978 (Kantor Desa)
+                    +62 85708200215 (Kantor Desa)
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
