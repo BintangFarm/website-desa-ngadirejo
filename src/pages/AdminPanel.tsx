@@ -91,6 +91,22 @@ export function AdminPanel() {
     }
   };
 
+  const handleApprove = async (id: string) => {
+    if (!window.confirm("Setujui UMKM ini untuk ditampilkan di website?")) return;
+    setIsLoading(true);
+    const result = await updateUMKM(id, { isApproved: true });
+    setIsLoading(false);
+    if (result.success) {
+      alert("UMKM disetujui!");
+      fetchUMKMs();
+    } else {
+      alert("Gagal menyetujui UMKM: " + result.error);
+    }
+  };
+
+  const pendingUmkms = umkms.filter(u => u.isApproved === false);
+  const approvedUmkms = umkms.filter(u => u.isApproved !== false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { namaPemilik, nama, kontak } = form;
@@ -108,7 +124,8 @@ export function AdminPanel() {
     const payload = {
       ...form,
       jam: `${form.hari}, ${form.jamBuka} - ${form.jamTutup}`,
-      koordinat: parsedKoordinat
+      koordinat: parsedKoordinat,
+      isApproved: true
     };
 
     if (isEditing && editId) {
@@ -227,10 +244,55 @@ export function AdminPanel() {
           </div>
 
           {/* List */}
-          <div className="lg:col-span-2 bg-white rounded-3xl shadow-md border border-slate-100 p-6">
-            <h2 className="font-display text-xl font-bold text-slate-800 mb-5">Daftar UMKM</h2>
-            {isFetching ? (
-              <div className="flex justify-center items-center py-20">
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* PENDING TABLE */}
+            {pendingUmkms.length > 0 && (
+              <div className="bg-amber-50/50 border border-amber-100 rounded-3xl shadow-sm p-6">
+                <h2 className="font-display text-xl font-bold text-amber-900 mb-5 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+                  Menunggu Konfirmasi
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-amber-200 text-sm text-amber-700">
+                        <th className="pb-3 font-semibold">Nama Usaha</th>
+                        <th className="pb-3 font-semibold">Pemilik</th>
+                        <th className="pb-3 font-semibold">Kategori</th>
+                        <th className="pb-3 font-semibold text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingUmkms.map((u) => (
+                        <tr key={u.id} className="border-b border-amber-100/50 hover:bg-amber-100/30 transition">
+                          <td className="py-4 text-sm font-medium text-amber-900">{u.nama}</td>
+                          <td className="py-4 text-sm text-amber-800">{u.namaPemilik}</td>
+                          <td className="py-4 text-sm text-amber-800">
+                            <span className="inline-block bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs">
+                              {u.kategori || "Tanpa Kategori"}
+                            </span>
+                          </td>
+                          <td className="py-4 text-sm text-right space-x-2 whitespace-nowrap">
+                            <button onClick={() => handleApprove(u.id as string)} className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition shadow-sm text-xs" title="Setujui">
+                              Setujui
+                            </button>
+                            <button onClick={() => handleDelete(u.id as string)} className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-medium rounded-lg transition text-xs" title="Tolak">
+                              Tolak
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-3xl shadow-md border border-slate-100 p-6">
+              <h2 className="font-display text-xl font-bold text-slate-800 mb-5">Daftar UMKM Aktif</h2>
+              {isFetching ? (
+                <div className="flex justify-center items-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               </div>
             ) : (
@@ -245,7 +307,7 @@ export function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {umkms.map((u) => (
+                    {approvedUmkms.map((u) => (
                       <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
                         <td className="py-4 text-sm font-medium text-slate-800">{u.nama}</td>
                         <td className="py-4 text-sm text-slate-600">{u.namaPemilik}</td>
@@ -264,7 +326,7 @@ export function AdminPanel() {
                         </td>
                       </tr>
                     ))}
-                    {umkms.length === 0 && (
+                    {approvedUmkms.length === 0 && (
                       <tr>
                         <td colSpan={4} className="py-10 text-center text-slate-500 text-sm">
                           Belum ada data UMKM.
@@ -275,6 +337,7 @@ export function AdminPanel() {
                 </table>
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>

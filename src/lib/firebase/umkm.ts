@@ -24,6 +24,7 @@ export interface UMKMData {
   status: string;
   image: string;
   createdAt?: any;
+  isApproved?: boolean;
 }
 
 const COLLECTION_NAME = "umkm";
@@ -31,6 +32,7 @@ const COLLECTION_NAME = "umkm";
 export async function addUMKM(data: Omit<UMKMData, "id" | "createdAt">) {
   try {
     const payload: any = {
+      isApproved: false, // Default to pending
       ...data,
       createdAt: serverTimestamp(),
     };

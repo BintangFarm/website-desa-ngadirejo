@@ -3,13 +3,18 @@ import { X, ZoomIn } from "lucide-react";
 import { cn } from "../lib/utils";
 
 
-const IMAGES = Array.from({ length: 18 }).map((_, i) => ({
-  id: i,
-  url: `https://images.unsplash.com/photo-${[
-    "1579893962635-f09459b7edfe", "1621516627043-4f9644365315", "1605810230434-7631ac76ec81", 
-    "1544644181-1484b3fdfc62", "1595855767284-06911c7df0e4", "1570042225831-d98fa7577f1e"
-  ][i % 6]}?q=80&w=800&auto=format&fit=crop&sig=${i}`
-}));
+const IMAGES = [
+  { id: 1,  url: "/galeri-desa/foto-1.jpeg" },
+  { id: 2,  url: "/galeri-desa/foto-2.jpeg" },
+  { id: 3,  url: "/galeri-desa/foto-3.jpeg" },
+  { id: 4,  url: "/galeri-desa/foto-4.jpeg" },
+  { id: 5,  url: "/galeri-desa/foto-5.jpeg" },
+  { id: 6,  url: "/galeri-desa/foto-6.jpeg" },
+  { id: 7,  url: "/galeri-desa/foto-7.jpeg" },
+  { id: 8,  url: "/galeri-desa/foto-8.jpeg" },
+  { id: 9,  url: "/galeri-desa/foto-9.jpeg" },
+  { id: 10, url: "/galeri-desa/foto-10.jpeg" },
+];
 
 export function Galeri() {
   const [preview, setPreview] = useState<string | null>(null);

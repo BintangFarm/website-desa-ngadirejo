@@ -364,10 +364,16 @@ export function RootLayout() {
           </div>
 
           <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-white/60 text-xs">
-              &copy; 2026 Tim KKN Digitalisasi UMKM Desa Ngadirejo. Hak Cipta
-              Dilindungi.
-            </p>
+            <div className="flex items-center gap-4 text-white/60 text-xs">
+              <p>
+                &copy; 2026 Tim KKN Digitalisasi UMKM Desa Ngadirejo. Hak Cipta
+                Dilindungi.
+              </p>
+              <span className="hidden md:inline text-white/20">|</span>
+              <Link to="/admin" className="hover:text-emerald-400 transition-colors">
+                Admin Panel
+              </Link>
+            </div>
             <div className="text-emerald-400/80 text-xs border border-emerald-400/30 px-4 py-1.5 rounded-full">
               Dibuat untuk mendukung digitalisasi UMKM Desa Ngadirejo.
             </div>

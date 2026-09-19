@@ -25,7 +25,7 @@ const router = createBrowserRouter([
       { path: "galeri", Component: Galeri },
       { path: "layanan", Component: Layanan },
       { path: "kontak", Component: Kontak },
-      { path: "panel-admin-ngadirejo", Component: AdminPanel },
+      { path: "admin", Component: AdminPanel },
       { path: "*", Component: () => <div className="p-20 text-center text-2xl font-display font-semibold">Halaman tidak ditemukan.</div> }
     ],
   },

@@ -105,9 +105,11 @@ export function Home() {
   useEffect(() => {
     async function fetchData() {
       const data = await getUMKMList();
-      if (data.length > 0) {
-        setUmkmList(data);
-      }
+      // Filter out only approved UMKMs
+      const approvedData = data.filter(u => u.isApproved === true);
+      
+      // Merge with dummy data, placing new approved UMKMs first
+      setUmkmList([...approvedData, ...(DUMMY_UMKM as UMKMData[])]);
     }
     fetchData();
   }, []);
