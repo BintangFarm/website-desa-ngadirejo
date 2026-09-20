@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getUMKMList, addUMKM, updateUMKM, deleteUMKM, UMKMData } from "../lib/firebase/umkm";
+import { getUMKMList, addUMKM, updateUMKM, deleteUMKM, UMKMData, uploadMultipleImages } from "../lib/supabase/umkm";
 import { Loader2, Plus, Edit, Trash2, X } from "lucide-react";
 
 export function AdminPanel() {
@@ -22,8 +22,10 @@ export function AdminPanel() {
     jamTutup: "16:00",
     koordinat: "",
     status: "Tutup",
-    image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=800&auto=format&fit=crop"
+    imageFiles: [] as File[],
+    existingImages: [] as string[],
   });
+  const [uploadProgress, setUploadProgress] = useState("");
 
   const fetchUMKMs = async () => {
     setIsFetching(true);
@@ -50,7 +52,8 @@ export function AdminPanel() {
       jamTutup: "16:00",
       koordinat: "",
       status: "Tutup",
-      image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=800&auto=format&fit=crop"
+      imageFiles: [],
+      existingImages: [],
     });
     setIsEditing(false);
     setEditId(null);
@@ -67,12 +70,13 @@ export function AdminPanel() {
       kontak: umkm.kontak || "",
       desc: umkm.desc || "",
       produk: umkm.produk || "",
-      hari: umkm.jam ? umkm.jam.split(",")[0] || "Setiap Hari" : "Setiap Hari",
-      jamBuka: umkm.jam ? (umkm.jam.split(",")[1]?.split("-")[0]?.trim() || "08:00") : "08:00",
-      jamTutup: umkm.jam ? (umkm.jam.split("-")[1]?.trim() || "16:00") : "16:00",
+      hari: umkm.hari || "Setiap Hari",
+      jamBuka: umkm.jamBuka || "08:00",
+      jamTutup: umkm.jamTutup || "16:00",
       koordinat: umkm.koordinat ? umkm.koordinat.join(", ") : "",
       status: umkm.status || "Tutup",
-      image: umkm.image || "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=800&auto=format&fit=crop"
+      imageFiles: [],
+      existingImages: umkm.images && umkm.images.length > 0 ? [...umkm.images] : (umkm.image ? [umkm.image] : []),
     });
   };
 
@@ -109,23 +113,50 @@ export function AdminPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { namaPemilik, nama, kontak } = form;
-    if (!namaPemilik || !nama || !kontak) return;
+    const { namaPemilik, nama, kontak, koordinat, produk } = form;
+    if (!namaPemilik || !nama || !kontak || !koordinat || !produk) {
+      alert("Mohon lengkapi data wajib (Nama Pemilik, Usaha, Kontak, Produk, Koordinat)!");
+      return;
+    }
     
     setIsLoading(true);
     let parsedKoordinat: [number, number] | undefined = undefined;
-    if (form.koordinat) {
-      const parts = form.koordinat.split(',').map(s => Number(s.trim()));
+    if (koordinat) {
+      const parts = koordinat.split(',').map(s => Number(s.trim()));
       if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
         parsedKoordinat = [parts[0], parts[1]];
+      } else {
+        alert("Format koordinat salah! Contoh yang benar: -7.9923, 112.7838");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    let allImageUrls: string[] = [...form.existingImages];
+    let finalImageUrl = allImageUrls.length > 0 ? allImageUrls[0] : "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=800&auto=format&fit=crop";
+
+    if (form.imageFiles.length > 0) {
+      setUploadProgress(`Mengompres & mengunggah ${form.imageFiles.length} foto...`);
+      const uploadRes = await uploadMultipleImages(form.imageFiles);
+      setUploadProgress("");
+      if (!uploadRes.success) {
+        alert("Gagal mengupload foto: " + uploadRes.error);
+        setIsLoading(false);
+        return;
+      }
+      if (uploadRes.urls && uploadRes.urls.length > 0) {
+        allImageUrls = [...allImageUrls, ...uploadRes.urls].slice(0, 5);
+        finalImageUrl = allImageUrls[0];
       }
     }
 
     const payload = {
       ...form,
-      jam: `${form.hari}, ${form.jamBuka} - ${form.jamTutup}`,
-      koordinat: parsedKoordinat,
-      isApproved: true
+      jam: `${form.hari}, ${form.jamBuka} - ${form.jamTutup} WIB`,
+      koordinat: parsedKoordinat as [number, number],
+      isApproved: true,
+      image: finalImageUrl,
+      images: allImageUrls,
     };
 
     if (isEditing && editId) {
@@ -179,15 +210,15 @@ export function AdminPanel() {
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nama Pemilik *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nama Pemilik <span className="text-red-400">*</span></label>
                 <input required type="text" value={form.namaPemilik} onChange={e => setForm({...form, namaPemilik: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nama Usaha *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nama Usaha <span className="text-red-400">*</span></label>
                 <input required type="text" value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kontak (WA) *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kontak (WA) <span className="text-red-400">*</span></label>
                 <input required type="text" value={form.kontak} onChange={e => setForm({...form, kontak: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
               </div>
               <div>
@@ -205,6 +236,10 @@ export function AdminPanel() {
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Alamat</label>
                 <input type="text" value={form.alamat} onChange={e => setForm({...form, alamat: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Produk / Jasa Tertentu <span className="text-red-400">*</span></label>
+                <input required type="text" value={form.produk} onChange={e => setForm({...form, produk: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="Contoh: Kripik Tempe" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div className="md:col-span-3">
@@ -224,9 +259,77 @@ export function AdminPanel() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi</label>
                 <textarea rows={3} value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none" />
               </div>
+              
+              {/* Foto Produk (Maks 5) */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Koordinat (Opsional)</label>
-                <input type="text" value={form.koordinat} onChange={e => setForm({...form, koordinat: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="Contoh: -7.9923, 112.7838" />
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Foto Produk / Usaha <span className="text-slate-400 font-normal">(Maks. 5 foto, otomatis dikompres)</span>
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  multiple
+                  onChange={e => {
+                    if (e.target.files) {
+                      const newFiles = Array.from(e.target.files);
+                      const combined = [...form.imageFiles, ...newFiles].slice(0, 5);
+                      setForm({...form, imageFiles: combined});
+                    }
+                  }} 
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition" 
+                />
+                {form.imageFiles.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-slate-500 font-medium">{form.imageFiles.length}/5 foto (foto pertama = sampul)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {form.imageFiles.map((file, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={URL.createObjectURL(file)} alt={`Preview ${idx+1}`} className={`w-12 h-12 object-cover rounded-md border-2 ${idx === 0 ? 'border-emerald-400' : 'border-slate-200'}`} />
+                          {idx === 0 && <span className="absolute -top-1 -left-1 bg-emerald-500 text-white text-[7px] font-bold px-1 py-0.5 rounded-full">Sampul</span>}
+                          <button type="button" onClick={() => setForm({...form, imageFiles: form.imageFiles.filter((_, i) => i !== idx)})} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : form.existingImages.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-slate-500 font-medium">Foto Tersimpan Saat Ini (Maks {5 - form.imageFiles.length} tambahan bisa diupload)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {form.existingImages.map((url, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={url} alt={`Saved ${idx+1}`} className={`w-12 h-12 object-cover rounded-md border-2 ${idx === 0 ? 'border-emerald-400' : 'border-slate-200'} opacity-90`} />
+                          {idx === 0 && <span className="absolute -top-1 -left-1 bg-emerald-500 text-white text-[7px] font-bold px-1 py-0.5 rounded-full">Sampul</span>}
+                          <button type="button" onClick={() => setForm({...form, existingImages: form.existingImages.filter((_, i) => i !== idx)})} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {uploadProgress && (
+                  <div className="mt-2 flex items-center gap-2 p-2 bg-amber-50 border border-amber-100 rounded-lg">
+                    <div className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-500 rounded-full animate-spin" />
+                    <p className="text-xs text-amber-700 font-medium">{uploadProgress}</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Koordinat Lokasi Maps <span className="text-red-400">*</span></label>
+                <input required type="text" value={form.koordinat} onChange={e => setForm({...form, koordinat: e.target.value})} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="Contoh: -7.9923, 112.7838" />
+                <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                  <svg className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0z" />
+                  </svg>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    Format: <strong>latitude, longitude</strong> (pisahkan dengan koma). Cara mendapatkan koordinat: buka{" "}
+                    <a href="https://maps.google.com" target="_blank" rel="noreferrer" className="underline font-semibold hover:text-blue-900">Google Maps</a>
+                    , klik kanan pada lokasi usaha, lalu salin angka koordinat yang muncul.
+                  </p>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status Buka/Tutup</label>

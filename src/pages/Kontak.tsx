@@ -7,18 +7,11 @@ import {
   CheckCircle2,
   MessageSquare,
   PlusCircle,
-  ImagePlus,
   X,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../lib/utils";
-import { addUMKM } from "../lib/firebase/umkm";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
-import { storage } from "../lib/firebase/config";
+import { addUMKM, uploadMultipleImages } from "../lib/supabase/umkm";
 
 type Tab = "pesan" | "daftar";
 
@@ -59,96 +52,12 @@ export function Kontak() {
     jamTutup: "",
 
     koordinat: "",
+    imageFiles: [] as File[],
   });
 
-  // ==========================================
-  // FOTO UMKM
-  // Maksimal 5 foto
-  // ==========================================
-  const [umkmImages, setUmkmImages] =
-    useState<
-      {
-        file: File;
-        preview: string;
-        id: string;
-      }[]
-    >([]);
+  const [uploadProgress, setUploadProgress] = useState("");
 
-  // ==========================================
-  // HANDLE UPLOAD FOTO
-  // ==========================================
-  const handleImageChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = Array.from(e.target.files || []);
 
-    if (files.length === 0) {
-      return;
-    }
-
-    // Maksimal 5 foto
-    if (umkmImages.length + files.length > 5) {
-      alert(
-        "Maksimal 5 foto untuk satu UMKM."
-      );
-
-      e.target.value = "";
-      return;
-    }
-
-    // ========================================
-    // VALIDASI FOTO
-    // ========================================
-    const validFiles = files.filter((file) => {
-      const allowedTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-      ];
-
-      // Validasi format
-      if (!allowedTypes.includes(file.type)) {
-        alert(
-          `${file.name} bukan format gambar yang diperbolehkan. Gunakan JPG, PNG, atau WEBP.`
-        );
-
-        return false;
-      }
-
-      // Maksimal 5MB
-      if (file.size > 5 * 1024 * 1024) {
-        alert(
-          `${file.name} berukuran lebih dari 5MB.`
-        );
-
-        return false;
-      }
-
-      return true;
-    });
-
-    // ========================================
-    // BUAT PREVIEW
-    // ========================================
-    const newImages = validFiles.map(
-      (file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-        id: `${file.name}-${file.lastModified}-${Math.random()
-          .toString(36)
-          .substring(2, 9)}`,
-      })
-    );
-
-    // Tambahkan foto baru
-    setUmkmImages((prev) => [
-      ...prev,
-      ...newImages,
-    ]);
-
-    // Reset input
-    e.target.value = "";
-  };
 
   // ==========================================
   // KIRIM PESAN WHATSAPP
@@ -198,10 +107,12 @@ export function Kontak() {
     if (
       !namaPemilik ||
       !namaUsaha ||
-      !kontak
+      !kontak ||
+      !produk ||
+      !koordinat
     ) {
       alert(
-        "Mohon isi Nama Pemilik, Nama Usaha, dan No. WhatsApp / Telepon."
+        "Mohon isi Nama Pemilik, Nama Usaha, No. WhatsApp / Telepon, Produk / Jasa, dan Koordinat."
       );
 
       return;
@@ -240,59 +151,28 @@ export function Kontak() {
       }
 
       // ========================================
-      // 2. UPLOAD SEMUA FOTO
+      // 2. UPLOAD FOTO KE SUPABASE (MAKS 5)
       // ========================================
-      let imageUrls: string[] = [];
-
-      if (umkmImages.length > 0) {
-        imageUrls = await Promise.all(
-          umkmImages.map(
-            async (image) => {
-              const fileExtension =
-                image.file.name
-                  .split(".")
-                  .pop()
-                  ?.toLowerCase() ||
-                "jpg";
-
-              const fileName = `umkm/${Date.now()}-${Math.random()
-                .toString(36)
-                .substring(
-                  2,
-                  9
-                )}.${fileExtension}`;
-
-              const storageRef = ref(
-                storage,
-                fileName
-              );
-
-              await uploadBytes(
-                storageRef,
-                image.file
-              );
-
-              const downloadURL =
-                await getDownloadURL(
-                  storageRef
-                );
-
-              return downloadURL;
-            }
-          )
-        );
+      let finalImageUrl = "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80";
+      let allImageUrls: string[] = [];
+      
+      if (umkmForm.imageFiles.length > 0) {
+        setUploadProgress(`Mengompres & mengunggah ${umkmForm.imageFiles.length} foto...`);
+        const uploadRes = await uploadMultipleImages(umkmForm.imageFiles);
+        setUploadProgress("");
+        if (!uploadRes.success) {
+          alert("Gagal mengupload foto: " + uploadRes.error);
+          setIsSubmitting(false);
+          return;
+        }
+        if (uploadRes.urls && uploadRes.urls.length > 0) {
+          finalImageUrl = uploadRes.urls[0]; // Foto pertama jadi sampul
+          allImageUrls = uploadRes.urls;
+        }
       }
 
       // ========================================
-      // 3. FOTO UTAMA
-      // ========================================
-      const imageUrl =
-        imageUrls.length > 0
-          ? imageUrls[0]
-          : "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80";
-
-      // ========================================
-      // 4. GABUNG JAM OPERASIONAL
+      // 3. GABUNG JAM OPERASIONAL
       // ========================================
       let jamOperasional = "-";
 
@@ -301,13 +181,13 @@ export function Kontak() {
         jamBuka &&
         jamTutup
       ) {
-        jamOperasional = `${hari} | ${jamBuka} - ${jamTutup} WIB`;
+        jamOperasional = `${hari}, ${jamBuka} - ${jamTutup} WIB`;
       } else if (hari) {
         jamOperasional = hari;
       }
 
       // ========================================
-      // 5. SIMPAN DATA KE FIREBASE
+      // 4. SIMPAN DATA KE SUPABASE
       // ========================================
       const res = await addUMKM({
         namaPemilik,
@@ -324,11 +204,9 @@ export function Kontak() {
 
         status: "Buka",
 
-        // Foto utama
-        image: imageUrl,
-
-        // Semua foto
-        images: imageUrls,
+        // Foto
+        image: finalImageUrl,
+        images: allImageUrls,
 
         // Data jam terpisah
         hari: hari || "Setiap Hari",
@@ -361,23 +239,8 @@ export function Kontak() {
           jamTutup: "",
 
           koordinat: "",
+          imageFiles: [],
         });
-
-        // ======================================
-        // HAPUS PREVIEW
-        // ======================================
-        umkmImages.forEach(
-          (image) => {
-            URL.revokeObjectURL(
-              image.preview
-            );
-          }
-        );
-
-        // ======================================
-        // RESET FOTO
-        // ======================================
-        setUmkmImages([]);
 
         // ======================================
         // HILANGKAN PESAN SUKSES
@@ -892,8 +755,8 @@ export function Kontak() {
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Produk / Jasa Tertentu{" "}
-                    <span className="text-slate-400 font-normal">
-                      (Opsional)
+                    <span className="text-red-400">
+                      *
                     </span>
                   </label>
 
@@ -1057,120 +920,79 @@ export function Kontak() {
                 </div>
 
                 {/* ======================================== */}
-                {/* FOTO PRODUK / USAHA */}
+                {/* FOTO PRODUK / USAHA (MAKS 5) */}
                 {/* ======================================== */}
-                <div className="w-full">
-
+                <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Foto Produk / Usaha{" "}
                     <span className="text-slate-400 font-normal">
-                      (Opsional tapi direkomendasikan)
+                      (Maks. 5 foto, otomatis dikompres)
                     </span>
                   </label>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-
-                    {/* FOTO YANG SUDAH DIPILIH */}
-                    {umkmImages.map(
-                      (image, index) => (
-                        <div
-                          key={image.id}
-                          className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group"
-                        >
-
-                          <img
-                            src={
-                              image.preview
-                            }
-                            alt={`Preview foto UMKM ${
-                              index + 1
-                            }`}
-                            className="w-full h-full object-cover"
-                          />
-
-                          {/* NOMOR FOTO */}
-                          <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-black/50 text-white text-xs font-semibold backdrop-blur-sm">
-                            Foto {index + 1}
+                  <input
+                    id="umkm-image-files"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        const newFiles = Array.from(e.target.files);
+                        const combined = [...umkmForm.imageFiles, ...newFiles].slice(0, 5);
+                        setUmkmForm({
+                          ...umkmForm,
+                          imageFiles: combined,
+                        });
+                      }
+                    }}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition"
+                  />
+                  
+                  {umkmForm.imageFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-slate-500 font-medium">
+                        {umkmForm.imageFiles.length}/5 foto dipilih (foto pertama = sampul)
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {umkmForm.imageFiles.map((file, idx) => (
+                          <div key={idx} className="relative group">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Preview ${idx + 1}`}
+                              className={cn(
+                                "w-16 h-16 object-cover rounded-lg border-2",
+                                idx === 0 ? "border-emerald-400" : "border-slate-200"
+                              )}
+                            />
+                            {idx === 0 && (
+                              <span className="absolute -top-1 -left-1 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                                Sampul
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUmkmForm({
+                                  ...umkmForm,
+                                  imageFiles: umkmForm.imageFiles.filter((_, i) => i !== idx),
+                                });
+                              }}
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                          {/* HAPUS FOTO */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              URL.revokeObjectURL(
-                                image.preview
-                              );
-
-                              setUmkmImages(
-                                (prev) =>
-                                  prev.filter(
-                                    (item) =>
-                                      item.id !==
-                                      image.id
-                                  )
-                              );
-                            }}
-                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                            title="Hapus foto"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-
-                        </div>
-                      )
-                    )}
-
-                    {/* TAMBAH FOTO */}
-                    {umkmImages.length <
-                      5 && (
-                      <label
-                        htmlFor="umkm-foto"
-                        className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
-                      >
-
-                        <ImagePlus className="w-8 h-8 text-slate-400 mb-3" />
-
-                        <p className="mb-1 text-sm text-slate-500 font-semibold">
-                          Tambah Foto
-                        </p>
-
-                        <p className="text-xs text-slate-400 text-center px-2 leading-relaxed">
-                          PNG, JPG, WEBP
-                          <br />
-                          Maks. 5MB
-                        </p>
-
-                        <input
-                          id="umkm-foto"
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          multiple
-                          className="hidden"
-                          onChange={
-                            handleImageChange
-                          }
-                        />
-
-                      </label>
-                    )}
-
-                  </div>
-
-                  {/* INFO FOTO */}
-                  <div className="flex items-center justify-between mt-2">
-
-                    <p className="text-xs text-slate-400">
-                      Maksimal 5 foto • Setiap
-                      foto maksimal 5MB
-                    </p>
-
-                    <p className="text-xs font-semibold text-slate-500">
-                      {umkmImages.length}/5
-                      foto
-                    </p>
-
-                  </div>
-
+                  {uploadProgress && (
+                    <div className="mt-2 flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                      <div className="w-4 h-4 border-2 border-amber-400/30 border-t-amber-500 rounded-full animate-spin" />
+                      <p className="text-xs text-amber-700 font-medium">{uploadProgress}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* ======================================== */}
@@ -1180,8 +1002,8 @@ export function Kontak() {
 
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Koordinat Lokasi Maps{" "}
-                    <span className="text-slate-400 font-normal">
-                      (Opsional)
+                    <span className="text-red-400">
+                      *
                     </span>
                   </label>
 

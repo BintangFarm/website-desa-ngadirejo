@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DUMMY_UMKM } from "./Home";
-import { getUMKMById, UMKMData } from "../lib/firebase/umkm";
+import { getUMKMById, UMKMData } from "../lib/supabase/umkm";
 import { cn } from "../lib/utils";
 
 export function UMKMDetail() {
@@ -117,23 +117,30 @@ export function UMKMDetail() {
             </section>
 
             {/* Galeri Foto */}
-            <section className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
-              <h2 className="font-display text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                <ImageIcon className="w-6 h-6 text-emerald-600" />
-                Galeri Foto
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 group">
-                    <img 
-                      src={`${umkm.image}?auto=format&fit=crop&w=600&h=450&sig=${i}`} 
-                      alt={`Galeri ${i}`} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  </div>
-                ))}
-              </div>
-            </section>
+            {umkm.images && umkm.images.length > 0 && (
+              <section className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 mt-8">
+                <h2 className="font-display text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                  <ImageIcon className="w-6 h-6 text-emerald-600" />
+                  Galeri Foto
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {umkm.images.map((imgUrl, idx) => (
+                    <div key={idx} className="aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 group relative">
+                      <img 
+                        src={imgUrl} 
+                        alt={`Galeri ${umkm.nama} ${idx + 1}`} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      {idx === 0 && (
+                        <div className="absolute top-2 left-2 bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                          Sampul
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
           </div>
 

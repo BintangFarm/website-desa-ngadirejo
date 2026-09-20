@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getUMKMList, UMKMData } from "../lib/firebase/umkm";
+import { getUMKMList, UMKMData } from "../lib/supabase/umkm";
 import { Search, MapPin, Store, Leaf, ShoppingBag, Clock, Navigation, Map } from "lucide-react";
 import { cn } from "../lib/utils";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
