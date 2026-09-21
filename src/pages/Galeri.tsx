@@ -4,16 +4,16 @@ import { cn } from "../lib/utils";
 
 
 const IMAGES = [
-  { id: 1,  url: "/galeri-desa/foto-1.jpeg" },
-  { id: 2,  url: "/galeri-desa/foto-2.jpeg" },
-  { id: 3,  url: "/galeri-desa/foto-3.jpeg" },
-  { id: 4,  url: "/galeri-desa/foto-4.jpeg" },
-  { id: 5,  url: "/galeri-desa/foto-5.jpeg" },
-  { id: 6,  url: "/galeri-desa/foto-6.jpeg" },
-  { id: 7,  url: "/galeri-desa/foto-7.jpeg" },
-  { id: 8,  url: "/galeri-desa/foto-8.jpeg" },
-  { id: 9,  url: "/galeri-desa/foto-9.jpeg" },
-  { id: 10, url: "/galeri-desa/foto-10.jpeg" },
+  { id: 1,  url: "/galeri-desa/1.jpeg" },
+  { id: 2,  url: "/galeri-desa/2.jpeg" },
+  { id: 3,  url: "/galeri-desa/3.jpeg" },
+  { id: 4,  url: "/galeri-desa/4.jpeg" },
+  { id: 5,  url: "/galeri-desa/5.jpeg" },
+  { id: 6,  url: "/galeri-desa/6.jpeg" },
+  { id: 7,  url: "/galeri-desa/7.jpeg" },
+  { id: 8,  url: "/galeri-desa/8.jpeg" },
+  { id: 9,  url: "/galeri-desa/9.jpeg" },
+  { id: 10, url: "/galeri-desa/10.jpeg" },
 ];
 
 export function Galeri() {
