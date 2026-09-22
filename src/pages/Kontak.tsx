@@ -12,6 +12,17 @@ import {
 import { useState } from "react";
 import { cn } from "../lib/utils";
 import { addUMKM, uploadMultipleImages } from "../lib/supabase/umkm";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix leaflet icon
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
 
 type Tab = "pesan" | "daftar";
 
@@ -57,9 +68,30 @@ export function Kontak() {
 
   const [uploadProgress, setUploadProgress] = useState("");
 
+  // Helper component for map clicks
+  function LocationMarker() {
+    useMapEvents({
+      click(e) {
+        setUmkmForm((prev) => ({
+          ...prev,
+          koordinat: `${e.latlng.lat}, ${e.latlng.lng}`,
+        }));
+      },
+    });
 
+    // Parse current coordinate
+    let pos: [number, number] | null = null;
+    if (umkmForm.koordinat && umkmForm.koordinat.includes(",")) {
+      const parts = umkmForm.koordinat.split(",");
+      const lat = parseFloat(parts[0].trim());
+      const lng = parseFloat(parts[1].trim());
+      if (!isNaN(lat) && !isNaN(lng)) {
+        pos = [lat, lng];
+      }
+    }
 
-  // ==========================================
+    return pos === null ? null : <Marker position={pos} />;
+  }  // ==========================================
   // KIRIM PESAN WHATSAPP
   // ==========================================
   const handleKirimPesan = () => {
@@ -148,6 +180,12 @@ export function Kontak() {
         ) {
           coordParsed = [lat, lng];
         }
+      }
+
+      if (!coordParsed) {
+        alert("Format koordinat tidak valid. Silakan pilih lokasi melalui peta atau gunakan format 'latitude, longitude'.");
+        setIsSubmitting(false);
+        return;
       }
 
       // ========================================
@@ -1007,24 +1045,42 @@ export function Kontak() {
                     </span>
                   </label>
 
-                  <input
-                    id="umkm-koordinat"
-                    type="text"
-                    placeholder="Contoh: -7.9923, 112.7838"
-                    value={
-                      umkmForm.koordinat
-                    }
-                    onChange={(e) =>
-                      setUmkmForm({
-                        ...umkmForm,
-                        koordinat:
-                          e.target.value,
-                      })
-                    }
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
-                  />
+                  <div className="mb-3">
+                    <input
+                      id="umkm-koordinat"
+                      type="text"
+                      placeholder="Contoh: -7.9923, 112.7838"
+                      value={
+                        umkmForm.koordinat
+                      }
+                      onChange={(e) =>
+                        setUmkmForm({
+                          ...umkmForm,
+                          koordinat:
+                            e.target.value,
+                        })
+                      }
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
+                    />
+                  </div>
 
-                  <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                  {/* MAP CONTAINER */}
+                  <div className="w-full h-[300px] rounded-xl overflow-hidden border border-slate-200 mb-2 relative z-0">
+                    <MapContainer
+                      center={[-7.9906623946355495, 112.80812424039766]}
+                      zoom={15}
+                      scrollWheelZoom={true}
+                      className="w-full h-full"
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <LocationMarker />
+                    </MapContainer>
+                  </div>
+
+                  <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
 
                     <svg
                       className="w-4 h-4 text-blue-500 shrink-0 mt-0.5"
@@ -1043,26 +1099,7 @@ export function Kontak() {
                     <div>
 
                       <p className="text-xs text-blue-700 leading-relaxed">
-                        Format:{" "}
-                        <strong>
-                          latitude,
-                          longitude
-                        </strong>{" "}
-                        (pisahkan dengan koma).
-                        Cara mendapatkan
-                        koordinat: buka{" "}
-                        <a
-                          href="https://maps.google.com"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline font-semibold hover:text-blue-900"
-                        >
-                          Google Maps
-                        </a>
-                        , klik kanan pada
-                        lokasi usaha Anda,
-                        lalu salin angka
-                        koordinat yang muncul.
+                        Anda dapat <strong>mengklik langsung pada peta</strong> di atas untuk menentukan lokasi usaha Anda, atau memasukkan koordinat secara manual dengan format <strong>latitude, longitude</strong>.
                       </p>
 
                     </div>

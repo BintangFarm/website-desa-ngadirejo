@@ -4,7 +4,6 @@ import {
   Info, Image as ImageIcon, MessageCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { DUMMY_UMKM } from "./Home";
 import { getUMKMById, UMKMData } from "../lib/supabase/umkm";
 import { cn } from "../lib/utils";
 
@@ -20,9 +19,6 @@ export function UMKMDetail() {
       const data = await getUMKMById(id);
       if (data) {
         setUmkm(data);
-      } else {
-        const dummy = DUMMY_UMKM.find(u => u.id === Number(id));
-        if (dummy) setUmkm(dummy as UMKMData);
       }
       setIsLoading(false);
     }
@@ -169,10 +165,35 @@ export function UMKMDetail() {
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-800 text-sm mb-2">Jam Operasional</h4>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100/50 text-emerald-700 text-[11px] font-bold tracking-wide uppercase mb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      {umkm.status}
-                    </div>
+                    {(() => {
+                      let isBuka = umkm.status === "Buka";
+                      if (umkm.jamBuka && umkm.jamTutup) {
+                        const now = new Date();
+                        const current = now.getHours() * 60 + now.getMinutes();
+                        const [bH, bM] = umkm.jamBuka.split(':').map(Number);
+                        const [tH, tM] = umkm.jamTutup.split(':').map(Number);
+                        const buka = bH * 60 + (bM || 0);
+                        const tutup = tH * 60 + (tM || 0);
+                        
+                        if (tutup < buka) {
+                          isBuka = current >= buka || current <= tutup;
+                        } else {
+                          isBuka = current >= buka && current <= tutup;
+                        }
+                      }
+                      return (
+                        <div className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase mb-2",
+                          isBuka ? "bg-emerald-100/50 text-emerald-700" : "bg-slate-100 text-slate-700"
+                        )}>
+                          <span className={cn(
+                            "w-1.5 h-1.5 rounded-full animate-pulse",
+                            isBuka ? "bg-emerald-500" : "bg-slate-500"
+                          )}></span>
+                          {isBuka ? "Buka" : "Tutup"}
+                        </div>
+                      );
+                    })()}
                     <p className="text-slate-600 text-sm leading-relaxed">{umkm.jam}</p>
                   </div>
                 </div>

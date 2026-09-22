@@ -1,4 +1,4 @@
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createBrowserRouter, Navigate } from "react-router-dom";
 import { RootLayout } from "./layouts/RootLayout";
 import { Home } from "./pages/Home";
 import { UMKMDetail } from "./pages/UMKMDetail";
@@ -10,6 +10,9 @@ import { Galeri } from "./pages/Galeri";
 import { Layanan } from "./pages/Layanan";
 import { Kontak } from "./pages/Kontak";
 import { AdminPanel } from "./pages/AdminPanel";
+import { Auth } from "./pages/Auth";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const router = createBrowserRouter([
   {
@@ -24,15 +27,34 @@ const router = createBrowserRouter([
       { path: "berita", Component: Berita },
       { path: "galeri", Component: Galeri },
       { path: "layanan", Component: Layanan },
-      { path: "kontak", Component: Kontak },
-      { path: "admin", Component: AdminPanel },
+      {
+        path: "kontak",
+        Component: () => (
+          <ProtectedRoute>
+            <Kontak />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin",
+        Component: () => (
+          <ProtectedRoute requireAdmin>
+            <AdminPanel />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "login", Component: Auth },
       { path: "*", Component: () => <div className="p-20 text-center text-2xl font-display font-semibold">Halaman tidak ditemukan.</div> }
     ],
   },
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
 
 export default App;

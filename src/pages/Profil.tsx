@@ -7,25 +7,44 @@ import {
 import { cn } from "../lib/utils";
 import { Link } from "react-router-dom";
 
-const DATA_PERTANIAN = [
-  { name: "Lahan Sayur Mayur", cat: "Hortikultura", img: "https://images.unsplash.com/photo-1592982537447-6f23f773dc16?q=80&w=600&auto=format&fit=crop", desc: "Berada di dataran tinggi, lahan ini sangat cocok ditanami sayuran segar seperti kubis, sawi, dan tomat yang menjadi penopang sayur segar daerah Malang." },
-  { name: "Tanaman Pangan", cat: "Pertanian", img: "https://images.unsplash.com/photo-1589923188900-85dae523342b?q=80&w=600&auto=format&fit=crop", desc: "Masyarakat Ngadirejo juga aktif mengelola lahan padi dan jagung sebagai sumber ketahanan pangan lokal." },
-  { name: "Peternakan Sapi Perah", cat: "Peternakan", img: "https://images.unsplash.com/photo-1596733430284-f7437764b1a9?q=80&w=600&auto=format&fit=crop", desc: "Sebagian warga mengelola peternakan sapi perah yang menghasilkan susu murni kualitas tinggi." }
-];
-
-const DATA_PERKEBUNAN = [
-  { name: "Kebun Kopi Robusta", cat: "Komoditas Unggulan", img: "https://images.unsplash.com/photo-1511556820780-d912e42b4980?q=80&w=600&auto=format&fit=crop", desc: "Kopi Robusta Ngadirejo memiliki cita rasa khas dataran tinggi Jabung. Proses panen dan sangrai tradisional menjadikannya incaran penikmat kopi." },
-  { name: "Kebun Durian", cat: "Agrowisata", img: "https://images.unsplash.com/photo-1552084117-56a98a960333?q=80&w=600&auto=format&fit=crop", desc: "Durian lokal khas Jabung tumbuh subur di wilayah Ngadirejo. Saat musim panen, perkebunan ini sering menjadi jujukan wisatawan pecinta durian." },
-  { name: "Agroforestri Bambu", cat: "Kehutanan", img: "https://images.unsplash.com/photo-1533630654593-b222d5d44449?q=80&w=600&auto=format&fit=crop", desc: "Bambu tidak hanya berfungsi sebagai penahan erosi di perbukitan, tetapi juga bahan baku kerajinan dan UMKM lokal." }
-];
 
 const DATA_WISATA = [
-  { name: "Coban Jidor", cat: "Air Terjun", img: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?q=80&w=600&auto=format&fit=crop", desc: "Air terjun tersembunyi dengan aliran air yang sangat jernih dan segar. Dipercaya oleh masyarakat sekitar dulunya sebagai tempat singgah para leluhur." },
-  { name: "Coban Jodo", cat: "Air Terjun", img: "https://images.unsplash.com/photo-1508697520427-0240be4430e6?q=80&w=600&auto=format&fit=crop", desc: "Memiliki dua aliran air yang saling berdampingan, dinamakan 'Jodo' (Jodoh) karena sering dikaitkan dengan mitos pertemuan dua insan." },
-  { name: "Coban Singo", cat: "Air Terjun", img: "https://images.unsplash.com/photo-1543720743-4dc918d3d922?q=80&w=600&auto=format&fit=crop", desc: "Aliran air terjun ini cukup deras dengan formasi batu yang menyerupai singa. Area ini sering digunakan untuk camping." },
-  { name: "Coban Kricik", cat: "Air Terjun", img: "https://images.unsplash.com/photo-1506115984606-9280d8800537?q=80&w=600&auto=format&fit=crop", desc: "Air terjun berundak kecil-kecil yang menghasilkan suara 'gemricik' air yang menenangkan. Sangat cocok untuk wisata keluarga." },
-  { name: "Coban Suko", cat: "Air Terjun", img: "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?q=80&w=600&auto=format&fit=crop", desc: "Lokasinya cukup menantang untuk dicapai, namun menyuguhkan panorama perbukitan Jabung yang luar biasa asri." },
-  { name: "Agrowisata Durian", cat: "Kebun Wisata", img: "https://images.unsplash.com/photo-1552084117-56a98a960333?q=80&w=600&auto=format&fit=crop", desc: "Kawasan yang terintegrasi antara perkebunan durian dan wisata edukasi alam. Pengunjung dapat memetik dan menikmati durian langsung di bawah pohon." },
+  {
+    name: "Coban Jidor",
+    cat: "Air Terjun",
+    img: "/wisata/coban-jidor.jpg",
+    desc: "Air terjun tersembunyi dengan aliran air yang sangat jernih dan segar. Dipercaya oleh masyarakat sekitar dulunya sebagai tempat singgah para leluhur."
+  },
+  {
+    name: "Coban Jodo",
+    cat: "Air Terjun",
+    img: "/wisata/Coban-Jodo.jpg",
+    desc: "Memiliki dua aliran air yang saling berdampingan, dinamakan 'Jodo' (Jodoh) karena sering dikaitkan dengan mitos pertemuan dua insan."
+  },
+  {
+    name: "Coban Singo",
+    cat: "Air Terjun",
+    img: "/wisata/arema.png",
+    desc: "Aliran air terjun ini cukup deras dengan formasi batu yang menyerupai singa. Area ini sering digunakan untuk camping."
+  },
+  {
+    name: "Coban Kricik",
+    cat: "Air Terjun",
+    img: "/wisata/coban kricik.jpg",
+    desc: "Air terjun berundak kecil-kecil yang menghasilkan suara 'gemricik' air yang menenangkan. Sangat cocok untuk wisata keluarga."
+  },
+  {
+    name: "Coban Suko",
+    cat: "Air Terjun",
+    img: "/wisata/coban suko.png",
+    desc: "Lokasinya cukup menantang untuk dicapai, namun menyuguhkan panorama perbukitan Jabung yang luar biasa asri."
+  },
+  {
+    name: "Agrowisata Durian",
+    cat: "Kebun Wisata",
+    img: "/wisata/agrosiwata durian.png",
+    desc: "Kawasan yang terintegrasi antara perkebunan durian dan wisata edukasi alam. Pengunjung dapat memetik dan menikmati durian langsung di bawah pohon."
+  },
 ];
 
 export function Profil() {
@@ -113,38 +132,6 @@ export function Profil() {
           ))}
         </div>
 
-        {/* Potensi Pertanian */}
-        <section className="bg-slate-50 py-16 px-4 md:px-12 rounded-[3rem] border border-slate-100">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-700 font-bold text-sm rounded-full mb-4">
-              <Leaf className="w-4 h-4" /> Potensi Alam
-            </div>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-800 mb-4">
-              Pertanian & Perkebunan Ngadirejo
-            </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto text-lg font-medium italic">
-              "Kemandirian pangan dari tanah yang subur."
-            </p>
-            <p className="text-slate-600 max-w-3xl mx-auto mt-4">
-             Karakter wilayah dataran tinggi Ngadirejo, Kecamatan Jabung, sangat ideal untuk aktivitas pertanian dan perkebunan. Mulai dari sayur mayur penyokong kebutuhan pangan, peternakan, hingga komoditas unggulan Kopi Robusta dan Durian lokal.
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...DATA_PERTANIAN, ...DATA_PERKEBUNAN].map((item, i) => (
-              <div key={i} className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-200 shadow-sm hover:shadow-xl transition-all cursor-pointer" onClick={() => setSelectedDetail(item)}>
-                <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                  <span className="text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">{item.cat}</span>
-                  <h3 className="font-display text-xl font-bold text-white mb-2">{item.name}</h3>
-                  <button className="text-sm text-white font-medium flex items-center gap-2 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
-                    Lihat Detail <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* Section Wisata */}
         <section className="bg-slate-50 py-16 px-4 md:px-12 rounded-[3rem] border border-slate-100">

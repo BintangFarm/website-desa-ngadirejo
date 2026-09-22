@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getUMKMList, UMKMData } from "../lib/supabase/umkm";
 import { Search, MapPin, Store, Leaf, ShoppingBag, Clock, Navigation, Map } from "lucide-react";
 import { cn } from "../lib/utils";
+import { useAuth } from "../contexts/AuthContext";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 
@@ -14,93 +15,20 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-export const DUMMY_UMKM = [
-  {
-    id: 1,
-    nama: "A4N Sticker & Acrylic",
-    kategori: "JASA PERCETAKAN",
-    status: "Tutup",
-    jam: "08.00-17.00 WIB (Senin-Sabtu)",
-    desc: "A4N Sticker & Acrylic menawarkan jasa digital printing, foto copy, cetak banner, dll.",
-    image: "https://images.unsplash.com/photo-1629904853716-f0bc54eea481?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9923, 112.7838] as [number, number]
-  },
-  {
-    id: 2,
-    nama: "ABE Fotografi",
-    kategori: "JASA FOTOGRAFI",
-    status: "Tutup",
-    jam: "Kondisional (sesuai pesanan)",
-    desc: "Menawarkan jasa fotografi dan videografi panggilan rumahan untuk berbagai acara.",
-    image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9933, 112.7845] as [number, number]
-  },
-  {
-    id: 3,
-    nama: "Alam Jaya",
-    kategori: "PERCETAKAN",
-    status: "Tutup",
-    jam: "08.00-16.00",
-    desc: "Alam jaya menawarkan jasa pembuatan sampul rapot dan ijazah sekolah terbaik.",
-    image: "https://images.unsplash.com/photo-1563260797-cb5cd70254c8?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9917, 112.7825] as [number, number]
-  },
-  {
-    id: 4,
-    nama: "Alvit",
-    kategori: "MAKANAN",
-    status: "Buka",
-    jam: "24 jam setiap hari",
-    desc: "Alvit menawarkan berbagai produk makanan, antara lain kue kering, dan camilan lokal.",
-    image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9903, 112.7859] as [number, number]
-  },
-  {
-    id: 5,
-    nama: "Bakso Cahaya",
-    kategori: "MAKANAN",
-    status: "Tutup",
-    jam: "07.00 - 20.00 WIB",
-    desc: "Menyediakan bakso dengan cita rasa gurih, kuah yang segar, dan pentol yang kenyal.",
-    image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9927, 112.7810] as [number, number]
-  },
-  {
-    id: 6,
-    nama: "Batagor Somay",
-    kategori: "MAKANAN RINGAN",
-    status: "Tutup",
-    jam: "10.00 - 16.00 WIB",
-    desc: "Menyediakan somay dan batagor dengan cita rasa khas bumbu kacang yang lezat.",
-    image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9937, 112.7860] as [number, number]
-  },
-  {
-    id: 7,
-    nama: "Bengkel Motor Arya Ban",
-    kategori: "JASA BENGKEL KENDARAAN",
-    status: "Tutup",
-    jam: "06.00-17.00",
-    desc: "Melayani penjualan ban, oli, tambal ban, servis ringan, isi angin, serta sparepart motor.",
-    image: "https://images.unsplash.com/photo-1580274455191-1c62238fa333?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9912, 112.7830] as [number, number]
-  },
-  {
-    id: 8,
-    nama: "Bengkel Pak Cipto Enduro",
-    kategori: "JASA BENGKEL KENDARAAN",
-    status: "Tutup",
-    jam: "06.00-17.00",
-    desc: "Melayani ganti ban, tambal ban, ganti oli, dan servis ringan kendaraan roda dua.",
-    image: "https://images.unsplash.com/photo-1530046339160-ce3e530c7d2f?q=80&w=800&auto=format&fit=crop",
-    koordinat: [-7.9943, 112.7820] as [number, number]
-  }
-];
-
 export function Home() {
   const [activeKategori, setActiveKategori] = useState("Semua");
   const [search, setSearch] = useState("");
-  const [umkmList, setUmkmList] = useState<UMKMData[]>(DUMMY_UMKM as UMKMData[]);
+  const [umkmList, setUmkmList] = useState<UMKMData[]>([]);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const requireLogin = (path: string) => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: path } });
+    } else {
+      navigate(path);
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -108,15 +36,16 @@ export function Home() {
       // Filter out only approved UMKMs
       const approvedData = data.filter(u => u.isApproved === true);
       
-      // Merge with dummy data, placing new approved UMKMs first
-      setUmkmList([...approvedData, ...(DUMMY_UMKM as UMKMData[])]);
+      // Set the state with approved data from Supabase
+      setUmkmList(approvedData);
     }
     fetchData();
   }, []);
 
   const filteredUMKM = umkmList.filter(u => {
-    const matchSearch = u.nama.toLowerCase().includes(search.toLowerCase());
-    const matchCat = activeKategori === "Semua" || true;
+    const searchLower = search.toLowerCase();
+    const matchSearch = u.nama.toLowerCase().includes(searchLower) || (u.kategori || "").toLowerCase().includes(searchLower);
+    const matchCat = activeKategori === "Semua" || u.kategori === activeKategori;
     return matchSearch && matchCat;
   });
 
@@ -228,9 +157,12 @@ export function Home() {
               <div className="bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm">
                 {filteredUMKM.length} Usaha
               </div>
-              <Link to="/kontak" className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors">
+              <button
+                onClick={() => requireLogin("/kontak")}
+                className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors"
+              >
                 + Daftarkan Usaha
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -282,13 +214,32 @@ export function Home() {
                   <div className="absolute top-3 left-3 w-7 h-7 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold rounded-md flex items-center justify-center">
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  {/* Status */}
-                  <div className={cn(
-                    "absolute bottom-3 left-3 px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm",
-                    umkm.status === "Buka" ? "bg-emerald-500/90 text-white" : "bg-black/60 text-white/90"
-                  )}>
-                    {umkm.status === "Buka" ? "● Buka" : "○ Tutup"}
-                  </div>
+                {/* Status */}
+                  {(() => {
+                    let isBuka = umkm.status === "Buka";
+                    if (umkm.jamBuka && umkm.jamTutup) {
+                      const now = new Date();
+                      const current = now.getHours() * 60 + now.getMinutes();
+                      const [bH, bM] = umkm.jamBuka.split(':').map(Number);
+                      const [tH, tM] = umkm.jamTutup.split(':').map(Number);
+                      const buka = bH * 60 + (bM || 0);
+                      const tutup = tH * 60 + (tM || 0);
+                      
+                      if (tutup < buka) {
+                        isBuka = current >= buka || current <= tutup;
+                      } else {
+                        isBuka = current >= buka && current <= tutup;
+                      }
+                    }
+                    return (
+                      <div className={cn(
+                        "absolute bottom-3 left-3 px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm",
+                        isBuka ? "bg-emerald-500/90 text-white" : "bg-black/60 text-white/90"
+                      )}>
+                        {isBuka ? "● Buka" : "○ Tutup"}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Content body */}
@@ -317,12 +268,18 @@ export function Home() {
                     >
                       Lihat Detail
                     </Link>
-                    <a
-                      href="#"
+                    <button
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate("/login", { state: { from: `/umkm/${umkm.id}` } });
+                        } else {
+                          window.open(`https://wa.me/${umkm.kontak}`, '_blank');
+                        }
+                      }}
                       className="flex-1 sm:flex-none text-center border border-slate-200 text-slate-600 text-sm font-semibold py-2.5 px-4 rounded-xl hover:bg-slate-50 transition-colors"
                     >
                       WhatsApp
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -391,12 +348,12 @@ export function Home() {
                 </div>
                 <p className="text-xs text-slate-500">Tersebar di Desa Ngadirejo</p>
               </div>
-              <Link
-                to="/kontak"
+              <button
+                onClick={() => requireLogin("/kontak")}
                 className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-3 rounded-2xl transition-colors mt-2"
               >
                 <Store className="w-4 h-4" /> Daftarkan Usaha
-              </Link>
+              </button>
             </div>
 
             {/* Map */}
